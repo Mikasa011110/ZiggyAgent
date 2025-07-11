@@ -51,7 +51,14 @@ def home():
     # 初始化当前情绪为默认
     current_emotion = session.get('current_emotion', 'default')
     
+    # 确保在渲染时思考状态是关闭的
+    session.pop('thinking', None)
+    
     if request.method == "POST":
+        # 检查表单是否包含 user_input
+        if 'user_input' not in request.form:
+            return "表单数据不完整", 400
+            
         user_input = request.form["user_input"]
         recent_emotions = request.form.get("recent_emotions", "[]")
         

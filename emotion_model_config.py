@@ -22,13 +22,13 @@ class EmotionModelConfig:
         
         # 情绪标签映射 - 根据RAF-DB数据集标准
         self.emotion_labels = {
-            6: "surprise",
+            0: "surprise",
             1: "fear", 
             2: "disgust",
             4: "happiness",
             3: "sadness",
             5: "anger",
-            0: "neutral"
+            6: "neutral"
         }
 
             # 原始情绪标签映射
