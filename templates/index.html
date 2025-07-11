@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ziggy Agent</title>
+    <style>
+        /* 修改Ziggy形象为固定定位 */
+        .ziggy-avatar {
+            position: fixed;
+            left: 80px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 3px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            /* 确保在最上层 */
+        }
+
+        /* 不同情绪的形象 */
+        .avatar-default {
+            background-image: url('/static/images/ziggy_default.png');
+        }
+
+        .avatar-anger {
+            background-image: url('/static/images/ziggy_anger.png');
+        }
+
+        .avatar-happiness {
+            background-image: url('/static/images/ziggy_happy.png');
+        }
+
+        .avatar-surprise {
+            background-image: url('/static/images/ziggy_surprise.png');
+        }
+
+        .avatar-fear {
+            background-image: url('/static/images/ziggy_fear.png');
+        }
+
+        .avatar-sadness {
+            background-image: url('/static/images/ziggy_sadness.png');
+        }
+
+        /* 调整聊天容器左边距 */
+        .chat-container {
+            width: 60%;
+            margin: 0 auto;
+            padding-left: 180px;
+            /* 为Ziggy图片留出空间 */
+            box-sizing: border-box;
+        }
+
+        /* 添加自动分析指示器 */
+        .auto-analysis-indicator {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .auto-analysis-active {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .analysis-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #4CAF50;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .chat-container {
+            width: 60%;
+            margin: 0 auto;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .user-message {
+            background-color: #f0f0f0;
+        }
+
+        .agent-message {
+            background-color: #d1f1d1;
+        }
+
+        .input-container {
+            margin-top: 20px;
+        }
+
+        /* Token 显示样式 */
+        .token-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .token-progress {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .token-progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .token-count {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* 表情识别区域样式 */
+        .emotion-section {
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none;
+            /* 默认隐藏 */
+        }
+
+        .video-container {
+            position: relative;
+            width: 320px;
+            height: 240px;
+            margin: 10px auto;
+            border: 3px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .emotion-result {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .emotion-text {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        /* 情绪颜色编码 */
+        .emotion-surprise {
+            color: #FFA500;
+            background: #FFF3E0;
+        }
+
+        .emotion-fear {
+            color: #800080;
+            background: #F3E5F5;
+        }
+
+        .emotion-disgust {
+            color: #008000;
+            background: #E8F5E9;
+        }
+
+        .emotion-happiness {
+            color: #FFD700;
+            background: #FFFDE7;
+        }
+
+        .emotion-sadness {
+            color: #1E90FF;
+            background: #E3F2FD;
+        }
+
+        .emotion-anger {
+            color: #FF4500;
+            background: #FFEBEE;
+        }
+
+        .emotion-neutral {
+            color: #A9A9A9;
+            background: #FAFAFA;
+        }
+
+        .emotion-uncertain {
+            color: #FF6B6B;
+            background: #FFEBEE;
+        }
+
+        /* 情绪概率分布样式 */
+        .emotion-probs {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .emotion-prob-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+
+        .prob-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-left: 10px;
+            flex: 1;
+            position: relative;
+        }
+
+        .prob-fill {
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .warning-message {
+            color: #FF6B6B;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* 最近情绪历史样式 */
+        .emotion-history {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border: 1px solid #d1e7ff;
+        }
+
+        .emotion-history h4 {
+            margin-top: 0;
+            color: #1e88e5;
+        }
+
+        .emotion-history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            margin: 3px 0;
+            border-bottom: 1px dashed #d1e7ff;
+        }
+
+        .emotion-history-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* 表情分析按钮样式 */
+        .toggle-analysis-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px auto;
+            display: block;
+        }
+
+        .toggle-analysis-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Ziggy形象展示 -->
+    <div class="ziggy-avatar" id="ziggy-avatar"></div>
+
+    <div class="chat-container">
+        <!-- Token 使用情况 -->
+        <div class="token-info">
+            <h3>Token 使用情况</h3>
+            <div class="token-progress">
+                <div class="token-progress-bar" id="token-bar"></div>
+            </div>
+            <div class="token-count">
+                <span id="current-tokens">0</span>/<span id="max-tokens">4096</span> tokens
+            </div>
+        </div>
+
+        <!-- 表情分析按钮 -->
+        <button class="toggle-analysis-btn" id="toggle-analysis-btn">显示表情分析</button>
+
+        <!-- 表情识别区域 -->
+        <div class="emotion-section" id="emotion-section">
+            <h3>表情识别 (自动模式)</h3>
+            <div class="auto-analysis-indicator" id="auto-analysis-indicator">
+                <span class="analysis-spinner" id="analysis-spinner"></span>
+                <span id="analysis-status">分析中...</span>
+            </div>
+            <div class="video-container">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="emotion-result">
+                当前情绪: <span id="emotion-text" class="emotion-text emotion-neutral">未检测</span>
+                <span id="emotion-emoji"></span>
+                <div>置信度: <span id="confidence-text">0</span>%</div>
+                <div id="warning-message" class="warning-message" style="display: none;"></div>
+            </div>
+            <div id="emotion-probs" class="emotion-probs" style="display: none;">
+                <h4>情绪概率分布:</h4>
+                <div id="prob-list"></div>
+            </div>
+
+            <!-- 最近情绪历史 -->
+            <div class="emotion-history">
+                <h4>最近3次情绪检测:</h4>
+                <div id="emotion-history-list"></div>
+            </div>
+        </div>
+
+        <!-- 聊天记录 -->
+        <div class="messages">
+            {% for msg in history %}
+            {% if msg.role == 'user' %}
+            <div class="message user-message"><strong>You：</strong> {{ msg.content }}</div>
+            {% elif msg.role == 'assistant' %}
+            <div class="message agent-message"><strong>Ziggy：</strong> {{ msg.content }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- 用户输入框 -->
+        <form method="POST" class="input-container" id="chat-form">
+            <input type="text" id="user-input" name="user_input" placeholder="Please enter your question..." required
+                style="width: 80%; padding: 10px;">
+            <input type="hidden" name="recent_emotions" id="recent-emotions-input">
+            <button type="submit" style="padding: 10px;">Submit</button>
+        </form>
+
+        <!-- 清除按钮 -->
+        <form method="POST" action="/clear_history">
+            <button type="submit" style="margin-top:10px;">清除对话</button>
+        </form>
+    </div>
+
+    <script>
+        // 页面加载时初始化Ziggy形象
+        document.addEventListener('DOMContentLoaded', function () {
+            // 获取当前情绪
+            const currentEmotion = "{{ current_emotion }}";
+            const avatarElem = document.getElementById('ziggy-avatar');
+            
+            // 设置对应的形象类
+            if (currentEmotion) {
+                avatarElem.classList.add(`avatar-${currentEmotion}`);
+            } else {
+                avatarElem.classList.add('avatar-default');
+            }
+        });
+
+        // 自动分析间隔（毫秒）
+        const AUTO_ANALYSIS_INTERVAL = 3000;
+        let analysisInterval = null;
+        let emotionHistory = []; // 存储最近3次情绪检测结果
+        let cameraStarted = false; // 跟踪摄像头是否已启动
+
+        // Token计数功能
+        function fetchTokenUsage() {
+            fetch('/get_token_usage')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network error');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('current-tokens').textContent = data.used_tokens;
+                    document.getElementById('max-tokens').textContent = data.limit;
+                    const percentage = Math.min((data.used_tokens / data.limit) * 100, 100);
+                    const progressBar = document.getElementById('token-bar');
+                    progressBar.style.width = `${percentage}%`;
+                    progressBar.style.background = percentage > 80 ? '#dc3545' : percentage > 50 ? '#ffc107' : '#4CAF50';
+                })
+                .catch(error => {
+                    console.error('获取Token数据失败:', error);
+                });
+        }
+
+        // 表情识别功能
+        const emotionEmojis = {
+            'surprise': '😲',
+            'fear': '😨',
+            'disgust': '🤢',
+            'happiness': '😊',
+            'sadness': '😢',
+            'anger': '😠',
+            'neutral': '😐',
+            'uncertain': '❓'
+        };
+
+        // 启动摄像头
+        function startCamera() {
+            if (cameraStarted) return;
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    cameraStarted = true;
+                    // 摄像头启动后开始自动分析
+                    startAutoAnalysis();
+                })
+                .catch(err => {
+                    console.error("摄像头错误:", err);
+                    alert("无法访问摄像头，请确保已授予权限");
+                    document.getElementById('emotion-text').textContent = "摄像头错误";
+                });
+        }
+
+        // 启动自动表情分析
+        function startAutoAnalysis() {
+            // 更新状态指示器
+            document.getElementById('analysis-status').textContent = "自动分析中...";
+            document.getElementById('analysis-spinner').style.display = "inline-block";
+            document.getElementById('auto-analysis-indicator').classList.add('auto-analysis-active');
+
+            // 每3秒分析一次
+            if (analysisInterval) clearInterval(analysisInterval);
+            analysisInterval = setInterval(analyzeCurrentFrame, AUTO_ANALYSIS_INTERVAL);
+        }
+
+        // 分析当前帧（自动模式）
+        async function analyzeCurrentFrame() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+
+            // 确保视频已准备好
+            if (video.readyState < 2) {
+                console.log("视频尚未准备好");
+                return;
+            }
+
+            // 设置canvas尺寸与视频相同
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // 绘制当前帧到canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 显示加载状态（仅在区域显示时更新UI）
+            if (document.getElementById('emotion-section').style.display === 'block') {
+                document.getElementById('emotion-text').textContent = "检测中...";
+                document.getElementById('emotion-emoji').textContent = "";
+                document.getElementById('confidence-text').textContent = "0";
+            }
+
+            try {
+                // 将canvas图像转换为base64
+                const imageData = canvas.toDataURL('image/jpeg', 0.9);
+
+                // 发送到后端分析
+                const response = await fetch('/analyze_emotion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // 仅在区域显示时更新UI结果
+                if (document.getElementById('emotion-section').style.display === 'block') {
+                    updateEmotionResult(result.emotion, result.confidence, result.all_emotions, result.message);
+                }
+
+                // 添加到情绪历史（始终更新）
+                addToEmotionHistory(result.emotion, result.confidence);
+
+            } catch (error) {
+                console.error('分析失败:', error);
+                // 仅在区域显示时更新UI错误
+                if (document.getElementById('emotion-section').style.display === 'block') {
+                    document.getElementById('emotion-text').textContent = "分析失败";
+                    document.getElementById('confidence-text').textContent = "";
+                }
+            }
+        }
+
+        // 更新情绪结果显示
+        function updateEmotionResult(emotion, confidence, allEmotions, message) {
+            const emotionElem = document.getElementById('emotion-text');
+            emotionElem.textContent = emotion;
+            emotionElem.className = `emotion-text emotion-${emotion}`;
+
+            document.getElementById('emotion-emoji').textContent =
+                emotionEmojis[emotion] || '';
+            document.getElementById('confidence-text').textContent = confidence;
+
+            // 显示警告信息
+            const warningElem = document.getElementById('warning-message');
+            if (message) {
+                warningElem.textContent = message;
+                warningElem.style.display = 'block';
+            } else {
+                warningElem.style.display = 'none';
+            }
+
+            // 显示所有情绪概率分布
+            if (allEmotions) {
+                const probList = document.getElementById('prob-list');
+                probList.innerHTML = '';
+
+                Object.entries(allEmotions).forEach(([emotionName, prob]) => {
+                    const item = document.createElement('div');
+                    item.className = 'emotion-prob-item';
+                    item.innerHTML = `
+                        <span>${emotionName}: ${prob}%</span>
+                        <div class="prob-bar">
+                            <div class="prob-fill" style="width: ${prob}%"></div>
+                        </div>
+                    `;
+                    probList.appendChild(item);
+                });
+
+                document.getElementById('emotion-probs').style.display = 'block';
+            } else {
+                document.getElementById('emotion-probs').style.display = 'none';
+            }
+        }
+
+        // 添加到情绪历史
+        function addToEmotionHistory(emotion, confidence) {
+            // 添加新结果到数组
+            emotionHistory.push({
+                emotion: emotion,
+                confidence: confidence,
+                timestamp: new Date().toLocaleTimeString()
+            });
+
+            // 只保留最近3次结果
+            if (emotionHistory.length > 3) {
+                emotionHistory.shift();
+            }
+
+            // 更新UI显示（仅在区域显示时更新）
+            if (document.getElementById('emotion-section').style.display === 'block') {
+                updateEmotionHistoryUI();
+            }
+        }
+
+        // 更新情绪历史UI
+        function updateEmotionHistoryUI() {
+            const historyList = document.getElementById('emotion-history-list');
+            historyList.innerHTML = '';
+
+            if (emotionHistory.length === 0) {
+                historyList.innerHTML = '<div class="emotion-history-item">无历史记录</div>';
+                return;
+            }
+
+            // 倒序显示，最新的在最上面
+            const reversedHistory = [...emotionHistory].reverse();
+
+            reversedHistory.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'emotion-history-item';
+                historyItem.innerHTML = `
+                    <div>
+                        <span class="emotion-history-label">${item.emotion}</span>
+                        <span class="emotion-text emotion-${item.emotion}">${item.confidence}%</span>
+                    </div>
+                    <div>${item.timestamp}</div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // 切换表情分析区域的显示
+        function toggleAnalysisSection() {
+            const section = document.getElementById('emotion-section');
+            const btn = document.getElementById('toggle-analysis-btn');
+
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                btn.textContent = '隐藏表情分析';
+                // 显示时更新UI
+                updateEmotionHistoryUI();
+            } else {
+                section.style.display = 'none';
+                btn.textContent = '显示表情分析';
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchTokenUsage();
+            startCamera(); // 始终启动摄像头和分析
+
+            // 设置按钮点击事件
+            document.getElementById('toggle-analysis-btn').addEventListener('click', toggleAnalysisSection);
+
+            // 表单提交事件处理
+            document.getElementById('chat-form').addEventListener('submit', function (e) {
+                // 更新token计数
+                setTimeout(fetchTokenUsage, 300);
+
+                // 将最近情绪历史转换为JSON字符串
+                const emotionsJson = JSON.stringify(emotionHistory);
+                document.getElementById('recent-emotions-input').value = emotionsJson;
+            });
+
+            // 添加清除历史按钮的事件监听
+            document.querySelector('form[action="/clear_history"] button').addEventListener('click', function () {
+                // 重置前端Token显示
+                setTimeout(() => {
+                    fetchTokenUsage();
+                    // 同时清空前端的情绪历史
+                    emotionHistory = [];
+                    updateEmotionHistoryUI();
+                }, 300);
+            });
+        });
+    </script>
+</body>
+
+</html>
