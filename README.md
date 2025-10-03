@@ -55,4 +55,4 @@ We designed this role-playing system using facial recognition and LLM dialogue t
 ## ⚖️ License
 MIT License
 
-![海报](.poster.png)
+![海报](poster.png)
